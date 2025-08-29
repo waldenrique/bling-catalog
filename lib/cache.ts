@@ -1,5 +1,6 @@
 import fs from 'fs'
 import path from 'path'
+import { getValidAdminTokens } from './admin-tokens'
 
 // No Vercel, usar /tmp para cache temporário
 const CACHE_DIR = process.env.VERCEL ? '/tmp' : path.join(process.cwd(), 'data')
@@ -143,5 +144,83 @@ export function getCacheInfo() {
     }
   } catch (error) {
     return { exists: false, lastUpdate: null, productCount: 0 }
+  }
+}
+
+// Nova função para sincronizar produtos usando tokens admin
+export async function syncProductsWithAdminTokens() {
+  try {
+    console.log('🔄 Iniciando sincronização com tokens admin...')
+    
+    const accessToken = await getValidAdminTokens()
+    if (!accessToken) {
+      console.error('❌ Tokens admin não disponíveis')
+      return false
+    }
+
+    const allProducts = []
+    let currentPage = 1
+    let hasMorePages = true
+
+    while (hasMorePages) {
+      console.log(`📥 Buscando página ${currentPage}...`)
+      
+      const response = await fetch(`https://www.bling.com.br/Api/v3/produtos?pagina=${currentPage}&limite=100`, {
+        headers: {
+          'Authorization': `Bearer ${accessToken}`,
+          'Content-Type': 'application/json',
+        },
+      })
+
+      if (!response.ok) {
+        console.error(`❌ Erro na página ${currentPage}: ${response.status}`)
+        break
+      }
+
+      const data = await response.json()
+      
+      if (!data.data || data.data.length === 0) {
+        hasMorePages = false
+        break
+      }
+
+      // Processar produtos da página
+      for (const item of data.data) {
+        if (item.codigo && item.nome && item.preco) {
+          allProducts.push({
+            sku: String(item.codigo),
+            nome: item.nome,
+            preco: parseFloat(item.preco) || 0,
+            estoque: parseInt(item.estoque?.saldoVirtualTotal || '0') || 0
+          })
+        }
+      }
+
+      console.log(`✅ Página ${currentPage}: ${data.data.length} produtos processados`)
+      
+      // Verificar se há mais páginas
+      hasMorePages = data.data.length === 100
+      currentPage++
+
+      // Delay entre requests para não sobrecarregar a API
+      if (hasMorePages) {
+        await new Promise(resolve => setTimeout(resolve, 500))
+      }
+    }
+
+    console.log(`🎉 Sincronização completa: ${allProducts.length} produtos encontrados`)
+
+    // Salvar no cache
+    if (allProducts.length > 0) {
+      await saveCachedProducts(allProducts)
+      return true
+    } else {
+      console.log('⚠️ Nenhum produto encontrado para cachear')
+      return false
+    }
+
+  } catch (error) {
+    console.error('❌ Erro na sincronização:', error)
+    return false
   }
 }

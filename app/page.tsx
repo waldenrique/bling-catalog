@@ -54,27 +54,31 @@ export default function ProductList() {
       
       setError(null)
       
-      const response = await fetch(`/api/products?page=${pageNum}&limit=50`)
+      const response = await fetch(`/api/products?page=${pageNum}&pageSize=20`)
+      const data = await response.json()
       
       if (!response.ok) {
-        if (response.status === 401) {
+        // Verificar se é erro de configuração
+        if (data.redirectTo) {
+          window.location.href = data.redirectTo
+          return
+        }
+        if (response.status === 503) {
           setError('Sistema não configurado. Entre em contato com o administrador.')
           return
         }
-        throw new Error('Erro ao carregar produtos')
+        throw new Error(data.error || 'Erro ao carregar produtos')
       }
       
-      const data = await response.json()
       console.log('Resposta da API:', data)
       
       // Verificar se a resposta tem a estrutura esperada
-      if (!data.products && !Array.isArray(data)) {
+      if (!data.products || !Array.isArray(data.products)) {
         console.error('Estrutura de resposta inesperada:', data)
         throw new Error('Resposta da API em formato inválido')
       }
       
-      // Se for array direto (formato antigo), converter para novo formato
-      const products = Array.isArray(data) ? data : data.products
+      const products = data.products
       const pagination = data.pagination || { hasMore: false }
       
       if (isFirstLoad) {
