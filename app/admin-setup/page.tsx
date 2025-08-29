@@ -8,6 +8,7 @@ export default function AdminSetupPage() {
 
   const handleAdminLogin = () => {
     setIsLoading(true);
+    setMessage('🔄 Preparando redirecionamento...');
     
     const clientId = process.env.NEXT_PUBLIC_BLING_CLIENT_ID;
     if (!clientId) {
@@ -17,11 +18,28 @@ export default function AdminSetupPage() {
     }
 
     const baseUrl = window.location.origin;
-    const redirectUri = encodeURIComponent(`${baseUrl}/admin-callback`);
-    const authUrl = `https://www.bling.com.br/Api/v3/oauth/authorize?response_type=code&client_id=${clientId}&state=admin-setup&redirect_uri=${redirectUri}`;
+    const redirectUri = `${baseUrl}/admin-callback`;
+    const encodedRedirectUri = encodeURIComponent(redirectUri);
+    const authUrl = `https://www.bling.com.br/Api/v3/oauth/authorize?response_type=code&client_id=${clientId}&state=admin-setup&redirect_uri=${encodedRedirectUri}`;
     
-    console.log('🔧 Setup Admin - Redirecionando para Bling');
-    window.location.href = authUrl;
+    // Debug info
+    console.log('🔧 Setup Admin - Informações de debug:');
+    console.log('Client ID:', clientId);
+    console.log('Base URL:', baseUrl);
+    console.log('Redirect URI:', redirectUri);
+    console.log('Encoded Redirect URI:', encodedRedirectUri);
+    console.log('Auth URL completa:', authUrl);
+    
+    setMessage(`🔄 Redirecionando para Bling...`);
+    
+    // Tentar redirecionar
+    try {
+      window.location.href = authUrl;
+    } catch (error) {
+      console.error('Erro no redirecionamento:', error);
+      setMessage(`❌ Erro no redirecionamento: ${error}`);
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -35,6 +53,12 @@ export default function AdminSetupPage() {
           <p>✅ Esta página é para configuração inicial do administrador</p>
           <p>🔐 Faça login UMA VEZ para configurar os tokens permanentes</p>
           <p>👥 Depois disso, usuários comuns acessarão direto o catálogo</p>
+          
+          <div className="bg-blue-50 p-3 rounded text-sm">
+            <strong>Debug Info:</strong>
+            <br />• Client ID: {process.env.NEXT_PUBLIC_BLING_CLIENT_ID ? '✅ Configurado' : '❌ Não configurado'}
+            <br />• URL Base: {typeof window !== 'undefined' ? window.location.origin : 'Carregando...'}
+          </div>
         </div>
 
         {message && (
