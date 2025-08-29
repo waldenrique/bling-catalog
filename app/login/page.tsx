@@ -7,6 +7,14 @@ export default function LoginPage() {
   const router = useRouter();
   const clientId = process.env.NEXT_PUBLIC_BLING_CLIENT_ID;
 
+  // Detectar URL base (local ou produção)
+  const getBaseUrl = () => {
+    if (typeof window !== 'undefined') {
+      return window.location.origin;
+    }
+    return process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000';
+  };
+
   // Verificar se já está autenticado (simplificado - atualizado)
   useEffect(() => {
     // Se tiver tokens no localStorage, redirecionar
@@ -19,13 +27,20 @@ export default function LoginPage() {
   }, [router]);
   
   const handleLogin = () => {
-    // De acordo com a documentação do Bling:
-    // https://developer.bling.com.br/autenticacao#fundamentos
-    
-    const redirectUri = encodeURIComponent('http://localhost:3000/callback');
+    if (!clientId) {
+      alert('Erro: Client ID não configurado. Verifique as variáveis de ambiente.');
+      return;
+    }
+
+    const baseUrl = getBaseUrl();
+    const redirectUri = encodeURIComponent(`${baseUrl}/callback`);
     const authUrl = `https://www.bling.com.br/Api/v3/oauth/authorize?response_type=code&client_id=${clientId}&state=xpto&redirect_uri=${redirectUri}`;
     
-    console.log('Redirecionando para autenticação do Bling:', authUrl);
+    console.log('Client ID:', clientId);
+    console.log('Base URL:', baseUrl);
+    console.log('Redirect URI:', `${baseUrl}/callback`);
+    console.log('Auth URL:', authUrl);
+    
     window.location.href = authUrl;
   };
 
