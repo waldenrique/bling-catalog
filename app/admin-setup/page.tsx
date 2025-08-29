@@ -17,22 +17,34 @@ export default function AdminSetupPage() {
       return;
     }
 
-    const baseUrl = window.location.origin;
+    // Construir URL de acordo com OAuth 2.0 spec (RFC 6749)
+    const baseUrl = 'https://bling-chi.vercel.app'; // URL de produção
     const redirectUri = `${baseUrl}/admin-callback`;
-    const encodedRedirectUri = encodeURIComponent(redirectUri);
-    const authUrl = `https://www.bling.com.br/Api/v3/oauth/authorize?response_type=code&client_id=${clientId}&state=admin-setup&redirect_uri=${encodedRedirectUri}`;
+    const state = 'admin-setup';
+    
+    // Parâmetros obrigatórios do OAuth 2.0 Authorization Code Grant
+    const params = new URLSearchParams({
+      response_type: 'code',        // REQUIRED
+      client_id: clientId,          // REQUIRED  
+      redirect_uri: redirectUri,    // REQUIRED se não registrado
+      state: state,                 // RECOMMENDED
+      scope: 'read write'           // OPTIONAL - escopo para API Bling
+    });
+    
+    const authUrl = `https://www.bling.com.br/Api/v3/oauth/authorize?${params.toString()}`;
     
     // Debug info
-    console.log('🔧 Setup Admin - Informações de debug:');
-    console.log('Client ID:', clientId);
-    console.log('Base URL:', baseUrl);
-    console.log('Redirect URI:', redirectUri);
-    console.log('Encoded Redirect URI:', encodedRedirectUri);
-    console.log('Auth URL completa:', authUrl);
+    console.log('🔧 Setup Admin - Informações OAuth 2.0:');
+    console.log('✓ Response Type:', 'code');
+    console.log('✓ Client ID:', clientId);
+    console.log('✓ Redirect URI:', redirectUri);
+    console.log('✓ State:', state);
+    console.log('✓ Scope:', 'read write');
+    console.log('✓ Auth URL:', authUrl);
     
-    setMessage(`🔄 Redirecionando para Bling...`);
+    setMessage(`🔄 Redirecionando para Bling OAuth...`);
     
-    // Tentar redirecionar
+    // Redirecionar para autorização
     try {
       window.location.href = authUrl;
     } catch (error) {
