@@ -1,7 +1,9 @@
 import fs from 'fs'
 import path from 'path'
 
-const CACHE_FILE = path.join(process.cwd(), 'data', 'products-cache.json')
+// No Vercel, usar /tmp para cache temporário
+const CACHE_DIR = process.env.VERCEL ? '/tmp' : path.join(process.cwd(), 'data')
+const CACHE_FILE = path.join(CACHE_DIR, 'products-cache.json')
 const CACHE_DURATION = 30 * 60 * 1000 // 30 minutos em millisegundos
 
 interface ProductCache {
@@ -46,9 +48,9 @@ export function isCacheValid() {
   }
 }
 
-export async function saveCachedProducts(products: any[]) {
+export async function saveCachedProducts(products: ProductCache['products']) {
   try {
-    // Criar diretório se não existir
+    // Criar diretório se não existir (funciona local e no Vercel)
     const dataDir = path.dirname(CACHE_FILE)
     if (!fs.existsSync(dataDir)) {
       fs.mkdirSync(dataDir, { recursive: true })
@@ -60,16 +62,16 @@ export async function saveCachedProducts(products: any[]) {
     }
 
     fs.writeFileSync(CACHE_FILE, JSON.stringify(cacheData, null, 2))
-    console.log(`💾 Cache salvo com ${products.length} produtos`)
+    console.log(`💾 Cache salvo com ${products.length} produtos em ${CACHE_FILE}`)
   } catch (error) {
     console.error('Erro ao salvar cache:', error)
   }
 }
 
 // Nova função para atualizar apenas estoque e preço (mantendo todos os produtos)
-export async function updateProductsPriceAndStock(updatedProducts: any[]) {
+export async function updateProductsPriceAndStock(updatedProducts: ProductCache['products']) {
   try {
-    let existingProducts = await getCachedProducts()
+    const existingProducts = await getCachedProducts()
     
     if (existingProducts.length === 0) {
       // Se não tem cache, salva todos os produtos

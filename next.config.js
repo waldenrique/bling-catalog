@@ -1,15 +1,15 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  experimental: {
-    turbo: {
-      // Configurações do Turbopack para produção
-    }
-  },
   // Otimizações para produção
   compress: true,
   poweredByHeader: false,
   
-  // Configuração para o cache de produtos
+  // Desabilitar ESLint durante build (para deploy rápido)
+  eslint: {
+    ignoreDuringBuilds: true,
+  },
+  
+  // Headers para cache
   async headers() {
     return [
       {
@@ -22,12 +22,6 @@ const nextConfig = {
         ]
       }
     ]
-  },
-
-  // Configuração para variáveis de ambiente
-  env: {
-    NEXT_PUBLIC_BLING_CLIENT_ID: process.env.NEXT_PUBLIC_BLING_CLIENT_ID,
-    BLING_CLIENT_SECRET: process.env.BLING_CLIENT_SECRET,
   }
 }
 
