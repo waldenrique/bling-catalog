@@ -1,0 +1,19 @@
+{
+  "version": 2,
+  "name": "bling-catalog",
+  "builds": [
+    {
+      "src": "package.json",
+      "use": "@vercel/next"
+    }
+  ],
+  "functions": {
+    "app/api/**/*.ts": {
+      "maxDuration": 30
+    }
+  },
+  "env": {
+    "NEXT_PUBLIC_BLING_CLIENT_ID": "@bling_client_id",
+    "BLING_CLIENT_SECRET": "@bling_client_secret"
+  }
+}
