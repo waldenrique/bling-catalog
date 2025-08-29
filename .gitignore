@@ -39,3 +39,9 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Cache de produtos (contém dados da API)
+/data/products-cache.json
+
+# Logs específicos do projeto
+*.log
