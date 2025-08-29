@@ -16,9 +16,21 @@ export default function AdminCallbackPage() {
         
         console.log('🔧 Admin Callback recebido:', { code, state });
 
-        if (!code || state !== 'admin-setup') {
-          setStatus('❌ Callback inválido');
+        if (!code) {
+          setStatus('❌ Código de autorização não recebido');
           return;
+        }
+
+        // Validar state para prevenir CSRF
+        const savedState = typeof window !== 'undefined' ? sessionStorage.getItem('bling_oauth_state') : null;
+        if (savedState && state !== savedState) {
+          setStatus('❌ Estado inválido - possível tentativa de CSRF');
+          return;
+        }
+
+        // Limpar state salvo
+        if (typeof window !== 'undefined') {
+          sessionStorage.removeItem('bling_oauth_state');
         }
 
         setStatus('🔄 Salvando tokens permanentes...');

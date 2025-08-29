@@ -31,22 +31,21 @@ export async function POST(request: NextRequest) {
 
     console.log('🔧 Trocando código por tokens permanentes...')
 
-    // Construir redirect_uri igual ao usado na autorização
-    const redirectUri = 'https://bling-chi.vercel.app/admin-callback'
-
-    // Trocar código por tokens conforme OAuth 2.0 spec
+    // Conforme documentação Bling, redirect_uri não é enviado na autorização
+    // mas DEVE ser enviado no token exchange se foi usado na autorização
+    // Como não usamos na autorização, vamos usar somente os parâmetros obrigatórios
+    
+    // Fazer requisição conforme documentação oficial Bling
     const tokenResponse = await fetch('https://www.bling.com.br/Api/v3/oauth/token', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/x-www-form-urlencoded',
         'Accept': 'application/json',
+        'Authorization': `Basic ${Buffer.from(`${clientId}:${clientSecret}`).toString('base64')}`
       },
       body: new URLSearchParams({
         grant_type: 'authorization_code',
-        code: code,
-        redirect_uri: redirectUri,
-        client_id: clientId,
-        client_secret: clientSecret,
+        code: code
       }),
     })
 
