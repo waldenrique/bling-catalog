@@ -38,10 +38,16 @@ export default function CallbackPage() {
           throw new Error(`Failed to get token: ${JSON.stringify(responseData)}`);
         }
 
-        console.log('Token exchange successful, waiting a moment before redirect...');
+        console.log('Token exchange successful, redirecting to home page...');
+        
+        // Armazena um flag indicando login bem-sucedido
+        sessionStorage.setItem('login_successful', 'true');
+        
         // Espera um momento para permitir que os cookies sejam definidos
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        router.push('/');
+        await new Promise(resolve => setTimeout(resolve, 1500));
+        
+        // Usa window.location em vez de router.push para forçar um refresh completo da página
+        window.location.href = '/';
       } catch (error) {
         console.error('Error exchanging code for token:', error);
         router.push('/error');

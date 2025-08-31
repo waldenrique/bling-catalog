@@ -43,14 +43,22 @@ export default function ProductList() {
   useEffect(() => {
     async function loadNcmData() {
       try {
+        console.log('Carregando dados de NCM...')
         const response = await fetch('/api/ncm')
         if (!response.ok) {
-          console.warn('Não foi possível carregar dados de NCM')
+          console.warn('Não foi possível carregar dados de NCM:', response.status, response.statusText)
           return
         }
         const data = await response.json()
-        setNcmData(data)
-        console.log('Dados de NCM carregados:', Object.keys(data).length, 'itens')
+        console.log('Resposta da API NCM:', typeof data, Array.isArray(data) ? 'É array' : 'Não é array')
+        
+        if (typeof data === 'object' && data !== null) {
+          setNcmData(data)
+          console.log('Dados de NCM carregados:', Object.keys(data).length, 'itens')
+          console.log('Amostra de NCM:', Object.entries(data).slice(0, 3))
+        } else {
+          console.error('Formato inesperado de dados NCM:', data)
+        }
       } catch (error) {
         console.error('Erro ao carregar NCM:', error)
       }
@@ -58,22 +66,41 @@ export default function ProductList() {
     
     async function loadIpiData() {
       try {
+        console.log('Carregando dados de IPI...')
         const response = await fetch('/api/ipi')
         if (!response.ok) {
-          console.warn('Não foi possível carregar dados de IPI')
+          console.warn('Não foi possível carregar dados de IPI:', response.status, response.statusText)
           return
         }
         const data = await response.json()
-        setIpiData(data)
-        console.log('Dados de IPI carregados:', Object.keys(data).length, 'itens')
+        console.log('Resposta da API IPI:', typeof data, Array.isArray(data) ? 'É array' : 'Não é array')
+        
+        if (typeof data === 'object' && data !== null) {
+          setIpiData(data)
+          console.log('Dados de IPI carregados:', Object.keys(data).length, 'itens')
+          console.log('Amostra de IPI:', Object.entries(data).slice(0, 3))
+        } else {
+          console.error('Formato inesperado de dados IPI:', data)
+        }
       } catch (error) {
         console.error('Erro ao carregar IPI:', error)
       }
     }
 
-    loadNcmData()
-    loadIpiData()
-    fetchProducts(1, true) // Carregar primeira página
+    async function loadAllData() {
+      try {
+        console.log('Iniciando carregamento de dados...')
+        await Promise.all([loadNcmData(), loadIpiData()])
+        console.log('Todos os dados carregados, iniciando carregamento de produtos')
+        fetchProducts(1, true) // Carregar primeira página
+      } catch (error) {
+        console.error('Erro no carregamento de dados:', error)
+        // Se falhar, tentamos carregar produtos mesmo assim
+        fetchProducts(1, true)
+      }
+    }
+    
+    loadAllData()
   }, [])
 
   // Carregar mais produtos quando chegar ao final

@@ -65,19 +65,19 @@ export default function AdminIPI() {
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-gray-100 p-4">
       <form onSubmit={handleSubmit} className="bg-white p-8 rounded shadow w-full max-w-md mb-8">
-        <h1 className="text-2xl font-bold mb-4">Cadastro de Alíquotas de IPI por NCM</h1>
+        <h1 className="text-2xl font-bold mb-4 text-gray-900">Cadastro de Alíquotas de IPI por NCM</h1>
         <div className="mb-4">
-          <label className="block mb-1">Código NCM</label>
+          <label className="block mb-1 text-gray-900">Código NCM</label>
           <input 
             value={ncm} 
             onChange={e => setNcm(e.target.value)} 
-            className="border p-2 w-full" 
+            className="border p-2 w-full text-gray-900" 
             placeholder="Ex: 8536.69.90"
             required 
           />
         </div>
         <div className="mb-4">
-          <label className="block mb-1">Alíquota de IPI (%)</label>
+          <label className="block mb-1 text-gray-900">Alíquota de IPI (%)</label>
           <input 
             type="number" 
             step="0.01" 
@@ -85,7 +85,7 @@ export default function AdminIPI() {
             max="100"
             value={ipi} 
             onChange={e => setIpi(e.target.value)} 
-            className="border p-2 w-full" 
+            className="border p-2 w-full text-gray-900" 
             placeholder="Ex: 1.5" 
             required 
           />
@@ -96,19 +96,19 @@ export default function AdminIPI() {
         >
           Salvar
         </button>
-        <div className="mt-4 font-medium">{status}</div>
+        <div className="mt-4 font-medium text-gray-900">{status}</div>
       </form>
       
       {/* Tabela de IPIs cadastrados */}
       {Object.keys(ipiData).length > 0 && (
         <div className="bg-white p-6 rounded shadow w-full max-w-md">
-          <h2 className="text-xl font-semibold mb-4">Alíquotas de IPI Cadastradas</h2>
+          <h2 className="text-xl font-semibold mb-4 text-gray-900">Alíquotas de IPI Cadastradas</h2>
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
                 <tr className="bg-gray-100">
-                  <th className="text-left p-2">NCM</th>
-                  <th className="text-right p-2">IPI (%)</th>
+                  <th className="text-left p-2 text-gray-900">NCM</th>
+                  <th className="text-right p-2 text-gray-900">IPI (%)</th>
                 </tr>
               </thead>
               <tbody>
@@ -116,8 +116,8 @@ export default function AdminIPI() {
                   .sort(([a], [b]) => a.localeCompare(b))
                   .map(([ncmCode, ipiRate]) => (
                     <tr key={ncmCode} className="border-t">
-                      <td className="p-2">{ncmCode}</td>
-                      <td className="text-right p-2">{ipiRate}%</td>
+                      <td className="p-2 text-gray-900">{ncmCode}</td>
+                      <td className="text-right p-2 text-gray-900">{ipiRate}%</td>
                     </tr>
                   ))
                 }
