@@ -158,8 +158,28 @@ export default function ProductList() {
     // Get NCM from ncmData or from product itself
     const ncm = ncmData[sku] || product.ncm
     
-    // Get IPI rate based on NCM
-    const ipiRate = ncm && ipiData[ncm] ? ipiData[ncm] : 0
+    // Get IPI rate based on NCM with format handling
+    let ipiRate = 0;
+    
+    if (ncm) {
+      // Tenta encontrar o IPI usando o NCM exatamente como está
+      ipiRate = ipiData[ncm];
+      
+      // Se não encontrar, tenta remover os pontos do NCM (caso esteja no formato 8536.69.90)
+      if (ipiRate === undefined && ncm.includes('.')) {
+        const ncmSemPontos = ncm.replace(/\./g, '');
+        ipiRate = ipiData[ncmSemPontos];
+      }
+      
+      // Se ainda não encontrar, tenta adicionar pontos ao NCM (caso esteja no formato 85366990)
+      if (ipiRate === undefined && !ncm.includes('.') && ncm.length === 8) {
+        const ncmComPontos = `${ncm.slice(0, 4)}.${ncm.slice(4, 6)}.${ncm.slice(6, 8)}`;
+        ipiRate = ipiData[ncmComPontos];
+      }
+      
+      // Define 0 como valor padrão se ainda não encontrou
+      ipiRate = ipiRate !== undefined ? ipiRate : 0;
+    }
     
     // Calculate base total and IPI value
     const baseTotal = quantidade * product.preco
@@ -305,7 +325,29 @@ export default function ProductList() {
               <tbody>
                 {products.map((product) => {
                   const ncm = ncmData[product.sku] || product.ncm || '-';
-                  const ipiRate = ncm && ncm !== '-' && ipiData[ncm] ? ipiData[ncm] : 0;
+                  
+                  // Tenta encontrar o IPI usando o NCM exatamente como está
+                  let ipiRate = ipiData[ncm];
+                  
+                  // Se não encontrar, tenta remover os pontos do NCM (caso esteja no formato 8536.69.90)
+                  if (ipiRate === undefined && ncm.includes('.')) {
+                    const ncmSemPontos = ncm.replace(/\./g, '');
+                    ipiRate = ipiData[ncmSemPontos];
+                  }
+                  
+                  // Se ainda não encontrar, tenta adicionar pontos ao NCM (caso esteja no formato 85366990)
+                  if (ipiRate === undefined && ncm !== '-' && !ncm.includes('.') && ncm.length === 8) {
+                    const ncmComPontos = `${ncm.slice(0, 4)}.${ncm.slice(4, 6)}.${ncm.slice(6, 8)}`;
+                    ipiRate = ipiData[ncmComPontos];
+                  }
+                  
+                  // Define 0 como valor padrão se ainda não encontrou
+                  ipiRate = ipiRate !== undefined ? ipiRate : 0;
+                  
+                  // Dados de debug
+                  if (ncm !== '-' && ipiRate === 0) {
+                    console.debug(`NCM sem IPI encontrado: ${ncm}`);
+                  }
                   
                   return (
                     <tr key={product.sku} className="border-t hover:bg-gray-50">
