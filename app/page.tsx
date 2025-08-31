@@ -9,6 +9,7 @@ interface Product {
   preco: number
   estoque: number
   situacao?: string
+  ncm?: string
 }
 
 interface OrderItem {
@@ -17,6 +18,7 @@ interface OrderItem {
   quantidade: number
   preco: number
   total: number
+  ncm?: string
 }
 
 export default function ProductList() {
@@ -27,13 +29,31 @@ export default function ProductList() {
   const [error, setError] = useState<string | null>(null)
   const [page, setPage] = useState(1)
   const [hasMore, setHasMore] = useState(true)
+  const [ncmData, setNcmData] = useState<Record<string, string>>({})
   
   const { ref, inView } = useInView({
     threshold: 0,
     triggerOnce: false,
   })
 
+  // Carregar produtos e dados de NCM
   useEffect(() => {
+    async function loadNcmData() {
+      try {
+        const response = await fetch('/api/ncm')
+        if (!response.ok) {
+          console.warn('Não foi possível carregar dados de NCM')
+          return
+        }
+        const data = await response.json()
+        setNcmData(data)
+        console.log('Dados de NCM carregados:', Object.keys(data).length, 'itens')
+      } catch (error) {
+        console.error('Erro ao carregar NCM:', error)
+      }
+    }
+
+    loadNcmData()
     fetchProducts(1, true) // Carregar primeira página
   }, [])
 
@@ -116,12 +136,15 @@ export default function ProductList() {
     const product = products.find(p => p.sku === sku)
     if (!product) return
 
+    // Get NCM from ncmData or from product itself
+    const ncm = ncmData[sku] || product.ncm
+
     setOrderItems(prev => {
       const existingItem = prev.find(item => item.sku === sku)
       if (existingItem) {
         return prev.map(item => 
           item.sku === sku 
-            ? { ...item, quantidade, total: quantidade * item.preco }
+            ? { ...item, quantidade, total: quantidade * item.preco, ncm }
             : item
         )
       }
@@ -130,7 +153,8 @@ export default function ProductList() {
         nome: product.nome,
         quantidade,
         preco: product.preco,
-        total: quantidade * product.preco
+        total: quantidade * product.preco,
+        ncm
       }]
     })
   }
@@ -228,6 +252,7 @@ export default function ProductList() {
                 <tr>
                   <th className="px-4 py-2 text-left text-gray-900 font-semibold">SKU</th>
                   <th className="px-4 py-2 text-left text-gray-900 font-semibold">Nome</th>
+                  <th className="px-4 py-2 text-left text-gray-900 font-semibold">NCM</th>
                   <th className="px-4 py-2 text-left text-gray-900 font-semibold">Preço</th>
                   <th className="px-4 py-2 text-left text-gray-900 font-semibold">Estoque</th>
                   <th className="px-4 py-2 text-left text-gray-900 font-semibold">Quantidade</th>
@@ -238,6 +263,7 @@ export default function ProductList() {
                   <tr key={product.sku} className="border-t hover:bg-gray-50">
                     <td className="border px-4 py-2 text-gray-800 font-medium">{product.sku}</td>
                     <td className="border px-4 py-2 text-gray-800">{product.nome}</td>
+                    <td className="border px-4 py-2 text-gray-800">{ncmData[product.sku] || '-'}</td>
                     <td className="border px-4 py-2 text-gray-800 font-medium">R$ {product.preco.toFixed(2)}</td>
                     <td className="border px-4 py-2 text-gray-800">{product.estoque}</td>
                     <td className="border px-4 py-2">
