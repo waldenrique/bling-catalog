@@ -48,9 +48,16 @@ export async function GET(request: NextRequest) {
       
       // Verificar se tokens admin estão configurados
       if (!hasAdminTokens()) {
+        console.log('❌ Tokens admin não configurados - redirecionando para setup')
         return NextResponse.json({ 
-          error: 'Sistema não configurado. Acesse /admin-setup para configurar os tokens admin.',
-          redirectTo: '/admin-setup'
+          error: 'Sistema requer configuração inicial. Configure os tokens admin uma única vez.',
+          message: 'Você será redirecionado para a página de configuração.',
+          redirectTo: '/admin-setup',
+          debug: {
+            hasTokens: false,
+            cacheValid: false,
+            action: 'redirect_to_setup'
+          }
         }, { status: 503 })
       }
 

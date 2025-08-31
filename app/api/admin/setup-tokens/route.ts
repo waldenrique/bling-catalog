@@ -31,10 +31,10 @@ export async function POST(request: NextRequest) {
 
     console.log('🔧 Trocando código por tokens permanentes...')
 
-    // Conforme documentação Bling, redirect_uri não é enviado na autorização
-    // mas DEVE ser enviado no token exchange se foi usado na autorização
-    // Como não usamos na autorização, vamos usar somente os parâmetros obrigatórios
-    
+    // O redirect_uri deve ser o mesmo usado na autorização (mesmo que não tenha sido enviado)
+    // Se foi configurado no app Bling, deve ser enviado na troca de tokens
+    const redirectUri = 'https://bling-chi.vercel.app/admin-callback'
+
     // Fazer requisição conforme documentação oficial Bling
     const tokenResponse = await fetch('https://www.bling.com.br/Api/v3/oauth/token', {
       method: 'POST',
@@ -45,18 +45,27 @@ export async function POST(request: NextRequest) {
       },
       body: new URLSearchParams({
         grant_type: 'authorization_code',
-        code: code
+        code: code,
+        redirect_uri: redirectUri
       }),
     })
 
     if (!tokenResponse.ok) {
       const errorText = await tokenResponse.text()
-      console.error('Erro ao obter tokens:', errorText)
-      return NextResponse.json({ success: false, error: `Erro HTTP: ${tokenResponse.status}` })
+      console.error('❌ Erro ao obter tokens:', tokenResponse.status, tokenResponse.statusText)
+      console.error('❌ Resposta completa:', errorText)
+      return NextResponse.json({ 
+        success: false, 
+        error: `Erro HTTP: ${tokenResponse.status} - ${errorText}` 
+      })
     }
 
     const tokenData = await tokenResponse.json()
-    console.log('🔧 Tokens recebidos, salvando permanentemente...')
+    console.log('🔧 Tokens recebidos:', { 
+      access_token: tokenData.access_token ? `${tokenData.access_token.substring(0, 10)}...` : 'VAZIO',
+      refresh_token: tokenData.refresh_token ? `${tokenData.refresh_token.substring(0, 10)}...` : 'VAZIO',
+      expires_in: tokenData.expires_in
+    })
 
     // Criar estrutura de tokens admin
     const adminTokens: AdminTokens = {
@@ -69,13 +78,31 @@ export async function POST(request: NextRequest) {
 
     // Criar diretório se não existir
     if (!fs.existsSync(TOKENS_DIR)) {
+      console.log('📁 Criando diretório:', TOKENS_DIR)
       fs.mkdirSync(TOKENS_DIR, { recursive: true })
     }
 
     // Salvar tokens permanentemente
+    console.log('💾 Salvando tokens em:', TOKENS_FILE)
     fs.writeFileSync(TOKENS_FILE, JSON.stringify(adminTokens, null, 2))
 
-    console.log('✅ Tokens admin salvos permanentemente!')
+    // Verificar se foi salvo corretamente
+    if (fs.existsSync(TOKENS_FILE)) {
+      console.log('✅ Tokens admin salvos permanentemente!')
+      console.log('📁 Arquivo confirmado em:', TOKENS_FILE)
+      const savedData = JSON.parse(fs.readFileSync(TOKENS_FILE, 'utf8'))
+      console.log('🔍 Dados salvos:', {
+        access_token: savedData.access_token ? 'OK' : 'VAZIO',
+        refresh_token: savedData.refresh_token ? 'OK' : 'VAZIO',
+        created_at: new Date(savedData.created_at).toLocaleString()
+      })
+    } else {
+      console.error('❌ Falha ao salvar tokens!')
+      return NextResponse.json({ 
+        success: false, 
+        error: 'Falha ao salvar tokens no arquivo' 
+      })
+    }
 
     return NextResponse.json({ 
       success: true, 

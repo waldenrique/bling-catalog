@@ -57,12 +57,11 @@ export async function getValidAdminTokens(): Promise<string | null> {
       headers: {
         'Content-Type': 'application/x-www-form-urlencoded',
         'Accept': 'application/json',
+        'Authorization': `Basic ${Buffer.from(`${clientId}:${clientSecret}`).toString('base64')}`
       },
       body: new URLSearchParams({
         grant_type: 'refresh_token',
-        refresh_token: tokens.refresh_token,
-        client_id: clientId,
-        client_secret: clientSecret,
+        refresh_token: tokens.refresh_token
       }),
     })
 
