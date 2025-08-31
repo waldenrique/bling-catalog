@@ -71,8 +71,13 @@ export default function AdminSetupPage() {
           <div className="bg-blue-50 p-3 rounded text-sm space-y-2">
             <strong>🔧 Configuração necessária no Bling:</strong>
             <div>1. Acesse seu app em: <a href="https://bling.com.br/cadastro.aplicativos.php" target="_blank" className="text-blue-600 underline">Cadastro de Aplicativos</a></div>
-            <div>2. Configure o Redirect URI como: <code className="bg-gray-200 px-1 rounded">https://bling-chi.vercel.app/admin-callback</code></div>
+            <div>2. Configure o Redirect URI como:</div>
+            <div className="ml-4">
+              <strong>Produção:</strong> <code className="bg-gray-200 px-1 rounded">https://bling-chi.vercel.app/admin-callback</code><br/>
+              <strong>Desenvolvimento:</strong> <code className="bg-gray-200 px-1 rounded">http://localhost:3000/admin-callback</code>
+            </div>
             <div>3. Salve as alterações no aplicativo</div>
+            <div className="text-orange-600">⚠️ O redirect URI deve ser EXATAMENTE igual ao configurado no Bling!</div>
           </div>
           
           <div className="bg-yellow-50 p-3 rounded text-sm">

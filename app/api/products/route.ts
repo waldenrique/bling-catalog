@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getCachedProducts, isCacheValid, syncProductsWithAdminTokens } from '@/lib/cache'
-import { hasAdminTokens } from '@/lib/admin-tokens'
+import { hasAdminTokens, getValidAdminTokens } from '@/lib/admin-tokens'
 
 // Função para sincronizar produtos automaticamente usando tokens admin
 async function autoSync() {
@@ -10,6 +10,13 @@ async function autoSync() {
     // Verificar se tokens admin estão configurados
     if (!hasAdminTokens()) {
       console.log('❌ Tokens admin não configurados')
+      return []
+    }
+
+    // Tentar obter token válido (com auto-refresh)
+    const validToken = await getValidAdminTokens()
+    if (!validToken) {
+      console.log('❌ Não foi possível obter token válido (podem ter expirado)')
       return []
     }
 
@@ -65,9 +72,17 @@ export async function GET(request: NextRequest) {
       allProducts = await autoSync()
       
       if (allProducts.length === 0) {
+        // Se tem tokens mas falhou na sincronização, pode ser problema de expiração
+        console.log('❌ Falha na sincronização - tokens podem ter expirado')
         return NextResponse.json({ 
-          error: 'Erro ao sincronizar produtos. Verifique os tokens admin.',
-          redirectTo: '/admin-setup'
+          error: 'Falha ao sincronizar produtos. Os tokens admin podem ter expirado.',
+          message: 'Reconfigure os tokens admin para resolver o problema.',
+          redirectTo: '/admin-setup',
+          debug: {
+            hasTokens: true,
+            cacheValid: false,
+            action: 'token_refresh_failed'
+          }
         }, { status: 500 })
       }
     }

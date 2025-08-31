@@ -31,9 +31,14 @@ export async function POST(request: NextRequest) {
 
     console.log('🔧 Trocando código por tokens permanentes...')
 
-    // O redirect_uri deve ser o mesmo usado na autorização (mesmo que não tenha sido enviado)
-    // Se foi configurado no app Bling, deve ser enviado na troca de tokens
-    const redirectUri = 'https://bling-chi.vercel.app/admin-callback'
+    // Detectar environment e usar redirect_uri apropriado
+    const isProduction = process.env.VERCEL || process.env.NODE_ENV === 'production'
+    const redirectUri = isProduction 
+      ? 'https://bling-chi.vercel.app/admin-callback'
+      : 'http://localhost:3000/admin-callback'
+    
+    console.log('🌐 Environment:', isProduction ? 'produção' : 'desenvolvimento')
+    console.log('🔗 Redirect URI:', redirectUri)
 
     // Fazer requisição conforme documentação oficial Bling
     const tokenResponse = await fetch('https://www.bling.com.br/Api/v3/oauth/token', {
