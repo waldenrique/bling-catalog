@@ -19,6 +19,8 @@ interface OrderItem {
   preco: number
   total: number
   ncm?: string
+  ipi?: number
+  valorIpi?: number
 }
 
 export default function ProductList() {
@@ -30,13 +32,14 @@ export default function ProductList() {
   const [page, setPage] = useState(1)
   const [hasMore, setHasMore] = useState(true)
   const [ncmData, setNcmData] = useState<Record<string, string>>({})
+  const [ipiData, setIpiData] = useState<Record<string, number>>({})
   
   const { ref, inView } = useInView({
     threshold: 0,
     triggerOnce: false,
   })
 
-  // Carregar produtos e dados de NCM
+  // Carregar produtos, dados de NCM e IPI
   useEffect(() => {
     async function loadNcmData() {
       try {
@@ -52,8 +55,24 @@ export default function ProductList() {
         console.error('Erro ao carregar NCM:', error)
       }
     }
+    
+    async function loadIpiData() {
+      try {
+        const response = await fetch('/api/ipi')
+        if (!response.ok) {
+          console.warn('Não foi possível carregar dados de IPI')
+          return
+        }
+        const data = await response.json()
+        setIpiData(data)
+        console.log('Dados de IPI carregados:', Object.keys(data).length, 'itens')
+      } catch (error) {
+        console.error('Erro ao carregar IPI:', error)
+      }
+    }
 
     loadNcmData()
+    loadIpiData()
     fetchProducts(1, true) // Carregar primeira página
   }, [])
 
@@ -138,13 +157,27 @@ export default function ProductList() {
 
     // Get NCM from ncmData or from product itself
     const ncm = ncmData[sku] || product.ncm
+    
+    // Get IPI rate based on NCM
+    const ipiRate = ncm && ipiData[ncm] ? ipiData[ncm] : 0
+    
+    // Calculate base total and IPI value
+    const baseTotal = quantidade * product.preco
+    const valorIpi = ipiRate > 0 ? baseTotal * (ipiRate / 100) : 0
 
     setOrderItems(prev => {
       const existingItem = prev.find(item => item.sku === sku)
       if (existingItem) {
         return prev.map(item => 
           item.sku === sku 
-            ? { ...item, quantidade, total: quantidade * item.preco, ncm }
+            ? { 
+                ...item, 
+                quantidade, 
+                total: baseTotal,
+                ncm,
+                ipi: ipiRate,
+                valorIpi
+              }
             : item
         )
       }
@@ -153,8 +186,10 @@ export default function ProductList() {
         nome: product.nome,
         quantidade,
         preco: product.preco,
-        total: quantidade * product.preco,
-        ncm
+        total: baseTotal,
+        ncm,
+        ipi: ipiRate,
+        valorIpi
       }]
     })
   }
@@ -197,7 +232,15 @@ export default function ProductList() {
     }
   }
 
-  const totalPedido = orderItems.reduce((sum, item) => sum + item.total, 0)
+  // Calcula os totais do pedido (valor base e valor de IPI)
+  const totaisPedido = orderItems.reduce((acc, item) => {
+    return {
+      base: acc.base + item.total,
+      ipi: acc.ipi + (item.valorIpi || 0)
+    };
+  }, { base: 0, ipi: 0 });
+  
+  const totalPedido = totaisPedido.base + totaisPedido.ipi;
 
   if (loading) {
     return (
@@ -253,31 +296,40 @@ export default function ProductList() {
                   <th className="px-4 py-2 text-left text-gray-900 font-semibold">SKU</th>
                   <th className="px-4 py-2 text-left text-gray-900 font-semibold">Nome</th>
                   <th className="px-4 py-2 text-left text-gray-900 font-semibold">NCM</th>
+                  <th className="px-4 py-2 text-left text-gray-900 font-semibold">IPI</th>
                   <th className="px-4 py-2 text-left text-gray-900 font-semibold">Preço</th>
                   <th className="px-4 py-2 text-left text-gray-900 font-semibold">Estoque</th>
                   <th className="px-4 py-2 text-left text-gray-900 font-semibold">Quantidade</th>
                 </tr>
               </thead>
               <tbody>
-                {products.map((product) => (
-                  <tr key={product.sku} className="border-t hover:bg-gray-50">
-                    <td className="border px-4 py-2 text-gray-800 font-medium">{product.sku}</td>
-                    <td className="border px-4 py-2 text-gray-800">{product.nome}</td>
-                    <td className="border px-4 py-2 text-gray-800">{ncmData[product.sku] || '-'}</td>
-                    <td className="border px-4 py-2 text-gray-800 font-medium">R$ {product.preco.toFixed(2)}</td>
-                    <td className="border px-4 py-2 text-gray-800">{product.estoque}</td>
-                    <td className="border px-4 py-2">
-                      <input
-                        type="number"
-                        min="0"
-                        max={product.estoque}
-                        onChange={(e) => handleQuantityChange(product.sku, parseInt(e.target.value) || 0)}
-                        className="w-20 px-2 py-1 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
-                        placeholder="0"
-                      />
-                    </td>
-                  </tr>
-                ))}
+                {products.map((product) => {
+                  const ncm = ncmData[product.sku] || product.ncm || '-';
+                  const ipiRate = ncm && ncm !== '-' && ipiData[ncm] ? ipiData[ncm] : 0;
+                  
+                  return (
+                    <tr key={product.sku} className="border-t hover:bg-gray-50">
+                      <td className="border px-4 py-2 text-gray-800 font-medium">{product.sku}</td>
+                      <td className="border px-4 py-2 text-gray-800">{product.nome}</td>
+                      <td className="border px-4 py-2 text-gray-800">{ncm}</td>
+                      <td className="border px-4 py-2 text-gray-800 font-medium">
+                        {ipiRate > 0 ? `${ipiRate}%` : '-'}
+                      </td>
+                      <td className="border px-4 py-2 text-gray-800 font-medium">R$ {product.preco.toFixed(2)}</td>
+                      <td className="border px-4 py-2 text-gray-800">{product.estoque}</td>
+                      <td className="border px-4 py-2">
+                        <input
+                          type="number"
+                          min="0"
+                          max={product.estoque}
+                          onChange={(e) => handleQuantityChange(product.sku, parseInt(e.target.value) || 0)}
+                          className="w-20 px-2 py-1 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
+                          placeholder="0"
+                        />
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
@@ -288,12 +340,27 @@ export default function ProductList() {
               <div className="space-y-2">
                 {orderItems.map((item) => (
                   <div key={item.sku} className="flex justify-between text-gray-800">
-                    <span>{item.nome} (x{item.quantidade})</span>
-                    <span className="font-medium">R$ {item.total.toFixed(2)}</span>
+                    <span className="flex-1">{item.nome} (x{item.quantidade})</span>
+                    <span className="text-right w-24">R$ {item.total.toFixed(2)}</span>
+                    {(item.valorIpi || 0) > 0 && (
+                      <span className="text-right w-24 text-gray-600 ml-2">
+                        +IPI: R$ {(item.valorIpi || 0).toFixed(2)}
+                      </span>
+                    )}
                   </div>
                 ))}
               </div>
               <hr className="my-3 border-gray-300" />
+              <div className="flex justify-between text-gray-800 mb-1">
+                <span>Subtotal:</span>
+                <span>R$ {totaisPedido.base.toFixed(2)}</span>
+              </div>
+              {totaisPedido.ipi > 0 && (
+                <div className="flex justify-between text-gray-800 mb-1">
+                  <span>Total IPI:</span>
+                  <span>R$ {totaisPedido.ipi.toFixed(2)}</span>
+                </div>
+              )}
               <div className="flex justify-between font-semibold text-lg text-gray-900">
                 <span>Total:</span>
                 <span>R$ {totalPedido.toFixed(2)}</span>
